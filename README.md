@@ -91,7 +91,7 @@ import type { NfcResult } from 'react-native-nfc-passport-reader';
   ```ts
   const result: NfcResult = await NfcPassportReader.startReading({
     bacKey: {
-      documentNo: '093009672123', // 12-digit CCCD number
+      documentNo: '123456789', // 9-digit CCCD number
       expiryDate: '2033-11-01',   // YYYY-MM-DD (expiry date on card)
       birthDate: '1993-11-01',    // YYYY-MM-DD (date of birth)
     },
@@ -188,7 +188,7 @@ export default function App() {
       setScanning(true);
       const nfcResult = await NfcPassportReader.startReading({
         bacKey: {
-          documentNo: '093009672123',  // Replace with actual CCCD number
+          documentNo: '123456789',  // Replace with actual CCCD number
           birthDate: '1993-11-01',     // Replace with actual birth date
           expiryDate: '2033-11-01',    // Replace with actual expiry date
         },
@@ -237,7 +237,7 @@ export default function App() {
 **Cause:** The BAC key information doesn't match the CCCD card exactly.
 
 **Solution:**
-- Double-check the `documentNo` (must be exactly 12 digits)
+- Double-check the `documentNo` (must be exactly 9 digits)
 - Verify the `birthDate` (format: YYYY-MM-DD)
 - Verify the `expiryDate` (format: YYYY-MM-DD)
 - Ensure all information matches the card **exactly**
