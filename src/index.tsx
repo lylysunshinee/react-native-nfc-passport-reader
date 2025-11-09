@@ -43,6 +43,7 @@ export type NfcResult = {
   mrz: string;
   nationality: string;
   originalFacePhoto?: string; // base64
+  sod?: string; // EF.SOD (Security Object Document) as base64
 };
 
 export default class NfcPassportReader {

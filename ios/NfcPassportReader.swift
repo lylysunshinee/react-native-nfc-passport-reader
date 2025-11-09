@@ -52,7 +52,7 @@ class NfcPassportReader: NSObject {
 
       let mrzKey = passportUtil.getMRZKey()
 
-      var tags: [DataGroupId] = [.COM, .DG1, .DG11]
+      var tags: [DataGroupId] = [.COM, .DG1, .DG11, .SOD]
 
       if includeImages ?? false {
         tags.append(.DG2)
@@ -95,6 +95,11 @@ class NfcPassportReader: NSObject {
             "mrz": passport.passportMRZ,
             "nationality": passport.nationality,
           ]
+
+          // Add SOD (Security Object Document) if available
+          if let sod = passport.sodBase64 {
+            result["sod"] = sod
+          }
 
           if includeImages ?? false {
             if let passportImage = passport.passportImage,

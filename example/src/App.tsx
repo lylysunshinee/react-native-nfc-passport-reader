@@ -1,184 +1,253 @@
 import * as React from 'react';
 
-import {
-  StyleSheet,
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-} from 'react-native';
-import NfcPassportReader, {
-  type NfcResult,
-} from 'react-native-nfc-passport-reader';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-export default function App() {
-  const [result, setResult] = React.useState<NfcResult>();
-  const [tagDiscovered, setTagDiscovered] = React.useState<boolean>(false);
+import NfcPassportReader from 'react-native-nfc-passport-reader';
+import type { NfcResult } from 'react-native-nfc-passport-reader';
+
+
+const MyComponent = () => {
+  const [supported, setSupported] = React.useState<boolean>(false);
+  const [enabled, setEnabled] = React.useState<boolean>(false);
+  const [isScanning, setIsScanning] = React.useState<boolean>(false);
+  const [scanStatus, setScanStatus] = React.useState<string>('');
+  const [result, setResult] = React.useState<NfcResult | null>(null);
 
   React.useEffect(() => {
-    NfcPassportReader.addOnTagDiscoveredListener(() => {
-      console.log('Tag Discovered');
-      setTagDiscovered(true);
-    });
+    const checkNfcStatus = async () => {
+      try {
+        const isSupported = await NfcPassportReader.isNfcSupported();
+        const isEnabled = await NfcPassportReader.isNfcEnabled();
+        setSupported(isSupported);
+        setEnabled(isEnabled);
+      } catch (error) {
+        console.log('Error checking NFC status:', error);
+      }
+    };
 
-    NfcPassportReader.addOnNfcStateChangedListener((state) => {
-      console.log('NFC State Changed:', state);
+    checkNfcStatus();
+  }, []);
+
+  React.useEffect(() => {
+    // Listen for tag discovered event
+    NfcPassportReader.addOnTagDiscoveredListener(() => {
+      console.log('Tag discovered!');
+      setScanStatus('Đã phát hiện thẻ NFC! Đang đọc...');
     });
 
     return () => {
-      NfcPassportReader.stopReading();
       NfcPassportReader.removeListeners();
     };
   }, []);
 
-  const startReading = () => {
-    NfcPassportReader.startReading({
-      bacKey: {
-        documentNo: '123456789', // Document Number
-        expiryDate: '2025-03-09', // YYYY-MM-DD
-        birthDate: '2025-03-09', // YYYY-MM-DD
-      },
-      includeImages: true, // Include images in the result (default: false)
-    })
-      .then((res) => {
-        setTagDiscovered(false);
-        setResult(res);
-      })
-      .catch((e) => {
-        setTagDiscovered(false);
-        console.error(e.message);
+  const onResult = async () => {
+    try {
+      setIsScanning(true);
+      setScanStatus('Sẵn sàng quét NFC. Vui lòng đưa thẻ CCCD gần điện thoại...');
+      setResult(null);
+
+      const nfcResult: NfcResult = await NfcPassportReader.startReading({
+        bacKey: {
+          documentNo: '123456789', // ⚠️ THAY ĐỔI: 9 số CCCD trên thẻ (ví dụ: 012345678)
+          birthDate: '1993-11-01',    // ⚠️ THAY ĐỔI: Ngày sinh ĐÚNG trên thẻ (YYYY-MM-DD)
+          expiryDate: '2033-11-01',   // ⚠️ THAY ĐỔI: Ngày hết hạn ĐÚNG trên thẻ (YYYY-MM-DD)
+        },
+        includeImages: false,
       });
+
+      console.log('NFC Result:', nfcResult);
+      setResult(nfcResult);
+      setScanStatus('Đọc thành công!');
+      setIsScanning(false);
+    } catch (error) {
+      console.log('NFC Error:', error);
+      setScanStatus(`Lỗi: ${error}`);
+      setIsScanning(false);
+    }
   };
 
-  const stopReading = () => {
+  const stopScanning = () => {
     NfcPassportReader.stopReading();
-  };
-
-  const openNfcSettings = async () => {
-    try {
-      const result = await NfcPassportReader.openNfcSettings();
-      console.log(result);
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
-  const isNfcSupported = async () => {
-    try {
-      const result = await NfcPassportReader.isNfcSupported();
-      console.log(result);
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
-  const isNfcEnabled = async () => {
-    try {
-      const result = await NfcPassportReader.isNfcEnabled();
-      console.log(result);
-    } catch (e) {
-      console.log(e);
-    }
+    setIsScanning(false);
+    setScanStatus('');
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
-        <View style={styles.box}>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={startReading} style={styles.button}>
-              <Text style={styles.buttonText}>Start Reading</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={stopReading} style={styles.button}>
-              <Text style={styles.buttonText}>Stop Reading</Text>
-            </TouchableOpacity>
-          </View>
+    <View style={styles.container}>
+      {/* NFC Status */}
+      <Text style={styles.txt}>NFC Supported: {supported ? 'Yes' : 'No'}</Text>
+      <Text style={styles.txt}>NFC Enabled: {enabled ? 'Yes' : 'No'}</Text>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={isNfcSupported} style={styles.button}>
-              <Text style={styles.buttonText}>Is NFC Supported</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={isNfcEnabled} style={styles.button}>
-              <Text style={styles.buttonText}>Is NFC Enabled</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={openNfcSettings} style={styles.button}>
-              <Text style={styles.buttonText}>Open NFC Settings</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.text}>{JSON.stringify(result, null, 2)}</Text>
-        </View>
-      </ScrollView>
-      {tagDiscovered && (
-        <View style={styles.overlayBox}>
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              NFC reading. Please wait for a moment...
-            </Text>
-          </View>
+      {/* Scan Status */}
+      {scanStatus !== '' && (
+        <View style={styles.statusContainer}>
+          <Text style={styles.statusText}>{scanStatus}</Text>
         </View>
       )}
-    </SafeAreaView>
+
+      {/* Scanning Indicator */}
+      {isScanning && (
+        <View style={styles.scanningBox}>
+          <Text style={styles.scanningText}>📱 Đưa thẻ CCCD vào mặt sau điện thoại</Text>
+          <Text style={styles.scanningSubtext}>Giữ thẻ sát thiết bị cho đến khi đọc xong</Text>
+        </View>
+      )}
+
+      {/* Result Display */}
+      {result && (
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultTitle}>Thông tin đã đọc:</Text>
+          <Text style={styles.resultText}>Họ tên: {result.lastName} {result.firstName}</Text>
+          <Text style={styles.resultText}>Ngày sinh: {result.birthDate}</Text>
+          <Text style={styles.resultText}>Số CCCD: {result.documentNo}</Text>
+          {result.identityNo && (
+            <Text style={styles.resultText}>Số định danh (SOB): {result.identityNo}</Text>
+          )}
+          <Text style={styles.resultText}>Giới tính: {result.gender === 'M' ? 'Nam' : result.gender === 'F' ? 'Nữ' : result.gender}</Text>
+          <Text style={styles.resultText}>Quốc tịch: {result.nationality}</Text>
+          <Text style={styles.resultText}>Ngày hết hạn: {result.expiryDate}</Text>
+          {result.placeOfBirth && (
+            <Text style={styles.resultText}>Nơi sinh: {result.placeOfBirth}</Text>
+          )}
+          {result.sod && (
+            <View style={styles.sodContainer}>
+              <Text style={styles.sodTitle}>EF.SOD (Security Object):</Text>
+              <Text style={styles.sodText} numberOfLines={3} ellipsizeMode="tail">
+                {result.sod.substring(0, 100)}...
+              </Text>
+              <Text style={styles.sodInfo}>Độ dài: {result.sod.length} ký tự (base64)</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Buttons */}
+      <View style={styles.buttonContainer}>
+        {!isScanning ? (
+          <TouchableOpacity style={styles.button} onPress={onResult}>
+            <Text style={styles.buttonText}>Bắt đầu quét NFC</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={[styles.button, styles.stopButton]} onPress={stopScanning}>
+            <Text style={styles.buttonText}>Dừng quét</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-    backgroundColor: '#252526',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2c3e50',
+    padding: 20,
+  },
+  txt: {
+    color: 'white',
+    fontSize: 14,
+    marginVertical: 5,
+  },
+  statusContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: 'rgba(52, 152, 219, 0.3)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#3498db',
+  },
+  statusText: {
+    color: '#ecf0f1',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  scanningBox: {
+    marginTop: 30,
+    padding: 25,
+    backgroundColor: 'rgba(46, 204, 113, 0.2)',
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: '#2ecc71',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+  },
+  scanningText: {
+    color: '#2ecc71',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  scanningSubtext: {
+    color: '#ecf0f1',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  resultContainer: {
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: 'rgba(46, 204, 113, 0.2)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#2ecc71',
+    width: '100%',
+  },
+  resultTitle: {
+    color: '#2ecc71',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  resultText: {
+    color: 'white',
+    fontSize: 14,
+    marginVertical: 3,
   },
   buttonContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 16,
+    marginTop: 30,
+    width: '100%',
   },
   button: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
-    justifyContent: 'center',
+    backgroundColor: '#3498db',
+    padding: 15,
+    borderRadius: 10,
     alignItems: 'center',
-    borderRadius: 4,
+  },
+  stopButton: {
+    backgroundColor: '#e74c3c',
   },
   buttonText: {
-    color: '#252526',
-    textAlign: 'center',
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  text: {
-    color: '#fff',
+  sodContainer: {
+    marginTop: 15,
+    padding: 12,
+    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3498db',
   },
-  box: {
-    flex: 1,
-    padding: 16,
-    gap: 8,
+  sodTitle: {
+    color: '#3498db',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
   },
-  overlayBox: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 100,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+  sodText: {
+    color: '#ecf0f1',
+    fontSize: 11,
+    fontFamily: 'monospace',
+    marginBottom: 5,
   },
-  infoBox: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    minHeight: 200,
-  },
-  infoText: {
-    color: '#252526',
-    textAlign: 'center',
-    fontSize: 22,
+  sodInfo: {
+    color: '#95a5a6',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 });
+
+export default MyComponent;

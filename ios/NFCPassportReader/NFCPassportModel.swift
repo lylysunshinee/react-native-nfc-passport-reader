@@ -163,10 +163,16 @@ public class NFCPassportModel {
 
     public var signatureImage : UIImage? {
         guard let dg7 = dataGroupsRead[.DG7] as? DataGroup7 else { return nil }
-        
+
         return dg7.getImage()
     }
 #endif
+
+    // EF.SOD (Security Object Document) as base64
+    public var sodBase64 : String? {
+        guard let sod = dataGroupsRead[.SOD] else { return nil }
+        return Data(sod.data).base64EncodedString()
+    }
 
     public var activeAuthenticationSupported : Bool {
         guard let dg15 = dataGroupsRead[.DG15] as? DataGroup15 else { return false }
